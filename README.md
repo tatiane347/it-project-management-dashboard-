@@ -2,6 +2,8 @@
 Sistema de gestão de ciclo de vida de software (SDLC) com métricas em tempo real, Kanban interativo e persistência de dados. Focado em metodologias ágeis para Squads de TI. 
 <img width="720" height="1276" alt="103 Sem Título_20260327163710" src="https://github.com/user-attachments/assets/1e1ff8f0-6cf0-4b5b-87d1-4cdc0567b60e" />
 <img width="1024" height="1024" alt="1774641420779" src="https://github.com/user-attachments/assets/68122404-4bbf-48d8-a5bd-28f27ee59b61" />
+<img width="768" height="1362" alt="1774644785710" src="https://github.com/user-attachments/assets/3e1df67e-e81b-47f5-ae1a-cf1d52e1aaa7" />
+
 ​🚀 IT Lifecycle & SDLC Management Dashboard
 ​Este projeto é um painel interativo para gestão técnica de projetos de TI, desenvolvido para aplicar os conceitos do curso de Gestão de Projetos de TI (120h).
 ​🎯 Funcionalidades Principais

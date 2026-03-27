@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Management Portfolio | Tatiane Nascimento</title>
+    
+    <!-- Favicon (Ícone na aba do site) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+
+    <!-- CDNs de Alta Performance -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .kanban-column {
+            background-color: #f1f5f9;
+            border-radius: 16px;
+            min-height: 75vh;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #cbd5e1;
+            transition: all 0.2s ease-in-out;
+            cursor: grab;
+        }
+
+        .task-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .priority-alta { border-left-color: #ef4444; }
+        .priority-media { border-left-color: #f59e0b; }
+        .priority-baixa { border-left-color: #10b981; }
+
+        .dropzone-active { background-color: #e2e8f0; border: 2px dashed #94a3b8; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar & Topbar Simulation -->
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-y-auto">
+            
+            <!-- Navbar -->
+            <nav class="bg-white border-b px-8 py-4 flex justify-between items-center sticky top-0 z-50">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 tracking-tight">SDLC Management System</h1>
+                    <p class="text-sm text-slate-500 font-medium">Gestora: Tatiane Nascimento De Souza</p>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <div class="relative">
+                        <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="Procurar task..." class="pl-10 pr-4 py-2 border rounded-full text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64">
+                        <i class="fas fa-search absolute left-4 top-3 text-slate-400"></i>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-blue-200" data-bs-toggle="modal" data-bs-target="#taskModal">
+                        <i class="fas fa-plus"></i> Nova Demanda
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Dashboard Stats -->
+            <div class="p-8 pb-0 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="glass-card p-4 rounded-2xl flex items-center gap-4 border shadow-sm">
+                    <div class="bg-blue-100 p-3 rounded-xl text-blue-600"><i class="fas fa-layer-group text-xl"></i></div>
+                    <div><p class="text-xs text-slate-500 font-bold uppercase">Total Tasks</p><h3 id="stat-total" class="text-2xl font-bold">0</h3></div>
+                </div>
+                <div class="glass-card p-4 rounded-2xl flex items-center gap-4 border shadow-sm">
+                    <div class="bg-amber-100 p-3 rounded-xl text-amber-600"><i class="fas fa-clock text-xl"></i></div>
+                    <div><p class="text-xs text-slate-500 font-bold uppercase">Em Aberto</p><h3 id="stat-todo" class="text-2xl font-bold text-amber-600">0</h3></div>
+                </div>
+                <div class="glass-card p-4 rounded-2xl flex items-center gap-4 border shadow-sm">
+                    <div class="bg-green-100 p-3 rounded-xl text-green-600"><i class="fas fa-rocket text-xl"></i></div>
+                    <div><p class="text-xs text-slate-500 font-bold uppercase">Deploys</p><h3 id="stat-done" class="text-2xl font-bold text-green-600">0</h3></div>
+                </div>
+                <div class="glass-card p-4 rounded-2xl flex items-center border shadow-sm h-24 overflow-hidden">
+                    <canvas id="miniChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Kanban Board -->
+            <div class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Coluna: Product Backlog -->
+                <section>
+                    <div class="flex justify-between items-center mb-4 px-2">
+                        <h2 class="font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-2 h-6 bg-amber-400 rounded-full"></span> Backlog
+                        </h2>
+                        <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-md" id="badge-todo">0</span>
+                    </div>
+                    <div id="col-todo" class="kanban-column" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                        <!-- Cards here -->
+                    </div>
+                </section>
+
+                <!-- Coluna: Desenvolvimento / QA -->
+                <section>
+                    <div class="flex justify-between items-center mb-4 px-2">
+                        <h2 class="font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-2 h-6 bg-blue-500 rounded-full"></span> Development
+                        </h2>
+                        <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-md" id="badge-dev">0</span>
+                    </div>
+                    <div id="col-dev" class="kanban-column" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    </div>
+                </section>
+
+                <!-- Coluna: Produção / Monitoramento -->
+                <section>
+                    <div class="flex justify-between items-center mb-4 px-2">
+                        <h2 class="font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-2 h-6 bg-green-500 rounded-full"></span> Production / Deploy
+                        </h2>
+                        <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-md" id="badge-done">0</span>
+                    </div>
+                    <div id="col-done" class="kanban-column" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nova Tarefa -->
+    <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-2xl rounded-2xl">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="text-xl font-bold text-slate-800">Nova Entrega de TI</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-6">
+                    <div class="mb-4">
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Título do Requisito</label>
+                        <input type="text" id="taskTitle" class="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Integração CI/CD GitHub Actions">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-2">Prioridade</label>
+                            <select id="taskPriority" class="w-full border rounded-xl px-4 py-2 outline-none">
+                                <option value="baixa">Baixa</option>
+                                <option value="media">Média</option>
+                                <option value="alta">Alta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-2">Tipo</label>
+                            <select id="taskType" class="w-full border rounded-xl px-4 py-2 outline-none">
+                                <option value="feature">Feature</option>
+                                <option value="bug">Bug Fix</option>
+                                <option value="infra">Infraestrutura</option>
+                                <option value="doc">Documentação</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Responsável</label>
+                        <input type="text" id="taskOwner" class="w-full border rounded-xl px-4 py-2 outline-none" placeholder="Ex: Squad Alpha / Tatiane">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="text-slate-500 font-bold px-4 py-2" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" onclick="createTask()" class="bg-blue-600 text-white font-bold px-6 py-2 rounded-xl shadow-lg hover:bg-blue-700 transition">Criar Demanda</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // State Management
+        let tasks = JSON.parse(localStorage.getItem('it_dashboard_tasks')) || [
+            { id: 101, title: 'Implementar SSL na Infra', priority: 'alta', type: 'infra', owner: 'DevOps Team', status: 'col-todo' },
+            { id: 102, title: 'Refatoração do Módulo de Login', priority: 'media', type: 'feature', owner: 'Tatiane', status: 'col-dev' },
+            { id: 103, title: 'Documentação do Ciclo SDLC', priority: 'baixa', type: 'doc', owner: 'Tatiane', status: 'col-done' }
+        ];
+
+        let myChart;
+
+        // Initialize App
+        function init() {
+            renderTasks();
+            initChart();
+            updateStats();
+        }
+
+        // Drag & Drop Logic
+        function allowDrop(ev) { ev.preventDefault(); }
+        
+        function dragEnter(ev) { if(ev.target.classList.contains('kanban-column')) ev.target.classList.add('dropzone-active'); }
+        
+        function dragLeave(ev) { ev.target.classList.remove('dropzone-active'); }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("taskId", ev.target.id.replace('task-', ''));
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const taskId = ev.dataTransfer.getData("taskId");
+            let targetCol = ev.target;
+            
+            while(!targetCol.classList.contains('kanban-column')) targetCol = targetCol.parentElement;
+            
+            targetCol.classList.remove('dropzone-active');
+            
+            const taskIndex = tasks.findIndex(t => t.id == taskId);
+            tasks[taskIndex].status = targetCol.id;
+            
+            saveAndRefresh();
+        }
+
+        // CRUD Operations
+        function createTask() {
+            const title = document.getElementById('taskTitle').value;
+            if(!title) return;
+
+            const newTask = {
+                id: Date.now(),
+                title: title,
+                priority: document.getElementById('taskPriority').value,
+                type: document.getElementById('taskType').value,
+                owner: document.getElementById('taskOwner').value || 'Sem dono',
+                status: 'col-todo'
+            };
+
+            tasks.push(newTask);
+            saveAndRefresh();
+            
+            // Clean UI
+            bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+            document.getElementById('taskTitle').value = '';
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id != id);
+            saveAndRefresh();
+        }
+
+        function filterTasks() {
+            const val = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.task-card').forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(val) ? 'block' : 'none';
+            });
+        }
+
+        // Rendering
+        function renderTasks() {
+            const columns = ['col-todo', 'col-dev', 'col-done'];
+            columns.forEach(col => {
+                const container = document.getElementById(col);
+                const filtered = tasks.filter(t => t.status === col);
+                
+                document.getElementById(`badge-${col.replace('col-', '')}`).innerText = filtered.length;
+                
+                container.innerHTML = filtered.map(t => `
+                    <div id="task-${t.id}" draggable="true" ondragstart="drag(event)" class="task-card priority-${t.priority}">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[9px] uppercase font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">${t.type}</span>
+                            <button onclick="deleteTask(${t.id})" class="text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-800 leading-snug mb-3">${t.title}</h4>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">
+                                    ${t.owner.charAt(0).toUpperCase()}
+                                </div>
+                                <span class="text-[10px] text-slate-500 font-medium">${t.owner}</span>
+                            </div>
+                            <i class="fas fa-grip-vertical text-slate-300 text-xs"></i>
+                        </div>
+                    </div>
+                `).join('') || `<div class="text-center py-10 opacity-30 italic text-xs">Aguardando demandas...</div>`;
+            });
+        }
+
+        // Chart & Stats
+        function updateStats() {
+            document.getElementById('stat-total').innerText = tasks.length;
+            document.getElementById('stat-todo').innerText = tasks.filter(t => t.status === 'col-todo').length;
+            document.getElementById('stat-done').innerText = tasks.filter(t => t.status === 'col-done').length;
+            updateChart();
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('miniChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Todo', 'Dev', 'Done'],
+                    datasets: [{
+                        label: 'Tasks',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'],
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { display: false }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        function updateChart() {
+            const data = [
+                tasks.filter(t => t.status === 'col-todo').length,
+                tasks.filter(t => t.status === 'col-dev').length,
+                tasks.filter(t => t.status === 'col-done').length
+            ];
+            myChart.data.datasets[0].data = data;
+            myChart.update();
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('it_dashboard_tasks', JSON.stringify(tasks));
+            renderTasks();
+            updateStats();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
+
